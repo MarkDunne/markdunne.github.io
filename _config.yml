@@ -8,7 +8,6 @@ relative_permalinks: true
 
 # Setup
 title:            Mark Dunne
-tagline:          'A Jekyll theme'
 description:      'Computer Science student at University College Cork'
 url:              http://markdunne.github.io
 baseurl:          /
