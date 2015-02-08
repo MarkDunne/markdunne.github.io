@@ -1,1 +1,6 @@
 approximate sine/cos with neural net
+
+analyse sentiment timeline in speaches / books
+	break into sentences 
+	compute sentiment
+	look for pattern
