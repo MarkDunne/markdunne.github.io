@@ -12,3 +12,7 @@ Recreate homer picture
 		Convert to graph
 		Find euler/hamilton path through graph to build parametric x/y signal
 		Fourier transform this x/y
+		
+Generate all possible pictures
+	500x500 pixel grid that updates as a function of time
+	estimate how long to famous pictures
