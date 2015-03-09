@@ -16,3 +16,6 @@ Recreate homer picture
 Generate all possible pictures
 	500x500 pixel grid that updates as a function of time
 	estimate how long to famous pictures
+	
+	
+Crossword solver using word2vec	
