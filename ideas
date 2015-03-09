@@ -18,4 +18,7 @@ Generate all possible pictures
 	estimate how long to famous pictures
 	
 	
-Crossword solver using word2vec	
+Crossword solver 
+	use word2vec	
+	or constraints
+
