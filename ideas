@@ -21,4 +21,7 @@ Generate all possible pictures
 Crossword solver 
 	use word2vec	
 	or constraints
+	
+Make a functioning haskell program without prelude
+	https://wiki.haskell.org/No_import_of_Prelude
 
