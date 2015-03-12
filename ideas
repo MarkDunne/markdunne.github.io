@@ -24,4 +24,7 @@ Crossword solver
 	
 Make a functioning haskell program without prelude
 	https://wiki.haskell.org/No_import_of_Prelude
+	
+API given email address returns info on that person
+	finds facebook/linkedin profile
 
