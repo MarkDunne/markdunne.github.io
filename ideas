@@ -34,3 +34,5 @@ Use echonest api to blend songs
 	
 use dota matchups to predict winner	
 	can get 500 matches from http://www.dotabuff.com/matches
+
+does resampling trainig data between epochs improve generalisation
