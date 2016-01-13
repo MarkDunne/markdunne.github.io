@@ -4,7 +4,6 @@ highlighter:      pygments
 
 # Permalinks
 permalink:        pretty
-relative_permalinks: true
 
 # Setup
 title:            Mark Dunne
@@ -15,8 +14,6 @@ baseurl:          /
 author:
   name:           'Mark Dunne'
   url:            http://markdunne.github.io
-
-paginate:         6
 
 # Custom vars
 version:          1.0.0
