@@ -1,11 +1,12 @@
 ---
-title: Tensorflow Dota Model 
+title: Markov Inauguration Address Generator 
 ---
+
 
 <!DOCTYPE html>
 <html>
 <head><meta charset="utf-8" />
-<title>Tensorflow Dota Model</title>
+<title>Markov Inauguration Address Generator</title>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.1.10/require.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
@@ -178,7 +179,7 @@ div#notebook {
 </div>
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<h1 id="Tensorflow-Dota-Predictor">Tensorflow Dota Predictor<a class="anchor-link" href="#Tensorflow-Dota-Predictor">&#182;</a></h1>
+<h1 id="Markov-Chain-Inauguration-Address-generator">Markov Chain Inauguration Address generator<a class="anchor-link" href="#Markov-Chain-Inauguration-Address-generator">&#182;</a></h1>
 </div>
 </div>
 </div>
@@ -187,7 +188,9 @@ div#notebook {
 </div>
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<p>Google's new <a href="https://www.tensorflow.org/">TensorFlow</a> looks set to be the neural net library of the future, so I wanted to do a simple project to get to grips with it.</p>
+<p>To play around with text synthesis, I used the Natural Language Toolkit (nltk) library to generate an Inauguration Address. It works just about as well as you might imagine, its terrible. But it was pretty fun seeing what it came up with.</p>
+<p>The general method used here was something along the lines of a markov chain. At each state, we transition to the next with a probability that we have learned from training on the corpora. The random path that we take is used to form a sentence.</p>
+<p>The project is broken into two experiments. In the first the states are represented as words, and in the second the states are presentented by the word's part of speech tag (e.g noun, verb, etc.).</p>
 
 </div>
 </div>
@@ -197,8 +200,7 @@ div#notebook {
 </div>
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<p>Predicting Dota matches is a fairly straight forward problem as far as neural nets go. Dota is a multiplayer online battle arena type game where two teams (Radiant and Dire) of 5 players try to destroy each others base. Each player can choose to play from a pool of 111 different characters (heros). Each character has a unique set of abilities and has a role to play in the game. This role is generally one of damage dealer, supportive, or something in between. The theory is that a successful team should be composed of characters whose roles and abilities work well together, and against the enemy team. The hope is that a neural would be able to pick up on these successful combinations and be able to predict the winner based on the characters picked by the players.</p>
-
+<h2 id="Part-One---Words-as-states">Part One - Words as states<a class="anchor-link" href="#Part-One---Words-as-states">&#182;</a></h2>
 </div>
 </div>
 </div>
@@ -207,36 +209,7 @@ div#notebook {
 </div>
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<p>The problem definition then is fairly straight forward. The input is a binary table of the the characters chosen by each team and the output is the winner of match, the Radiant team or the Dire team. However, its clear that there will be a large irreducible error, since individual player skill generally trumps character choices.</p>
-
-</div>
-</div>
-</div>
-<div class="cell border-box-sizing text_cell rendered">
-<div class="prompt input_prompt">
-</div>
-<div class="inner_cell">
-<div class="text_cell_render border-box-sizing rendered_html">
-<h2 id="Previous-Work">Previous Work<a class="anchor-link" href="#Previous-Work">&#182;</a></h2>
-</div>
-</div>
-</div>
-<div class="cell border-box-sizing text_cell rendered">
-<div class="prompt input_prompt">
-</div>
-<div class="inner_cell">
-<div class="text_cell_render border-box-sizing rendered_html">
-<p>Kevin Conley and Daniel Perry of Stanford University worked on a <a href="http://kevintechnology.com/post/71621133663/using-machine-learning-to-recommend-heroes-for">paper</a> doing almost the same thing. Their paper focused on recommending characters for players to pick against an enemy line up. They train a logistic regression model to predict the winner of each match and use this to build a simple recommendation engine. Their best model gets to 69.8% validation accuracy. This seems like a solid result, its well above the 50% baseline, and supports the idea of large irreducible error as mentioned before. But lets try to replicate it anyway.</p>
-
-</div>
-</div>
-</div>
-<div class="cell border-box-sizing text_cell rendered">
-<div class="prompt input_prompt">
-</div>
-<div class="inner_cell">
-<div class="text_cell_render border-box-sizing rendered_html">
-<p>Note: When the authors gathered their dataset, there were 108 characters to choose from. Now there are 111, but I will continue using the out dated dataset for the sake of consistency.</p>
+<p>This way of representing the states is the most common in speech synthesis. Its also pretty simple. The idea is that we build an adjacency structure for each word (or group of words) so we know what should follow it.</p>
 
 </div>
 </div>
@@ -247,10 +220,74 @@ div#notebook {
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython2"><pre><span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
-<span class="kn">import</span> <span class="nn">pandas</span> <span class="kn">as</span> <span class="nn">pd</span>
-<span class="kn">from</span> <span class="nn">sklearn.naive_bayes</span> <span class="kn">import</span> <span class="n">MultinomialNB</span>
-<span class="kn">from</span> <span class="nn">sklearn.linear_model</span> <span class="kn">import</span> <span class="n">LogisticRegression</span>
-<span class="kn">from</span> <span class="nn">sklearn.cross_validation</span> <span class="kn">import</span> <span class="n">cross_val_score</span>
+<span class="kn">from</span> <span class="nn">textblob</span> <span class="kn">import</span> <span class="n">TextBlob</span>
+<span class="kn">from</span> <span class="nn">nltk.corpus</span> <span class="kn">import</span> <span class="n">inaugural</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">defaultdict</span>
+<span class="kn">from</span> <span class="nn">IPython.core.display</span> <span class="kn">import</span> <span class="n">HTML</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>We'll use start/stop tags to simplify the code. By sticking these on the start and end, we don't have to worry about edge cases so much</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[&nbsp;]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython2"><pre><span class="n">start_tag</span> <span class="o">=</span> <span class="s">&#39;START&#39;</span>
+<span class="n">end_tag</span>   <span class="o">=</span> <span class="s">&#39;STOP&#39;</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>The following function generates the word-adjacency structure for a given corpus and order. Order here translates to the order of our markov chain. If the order is 1, then we look at the previous word to determine the next. If the order is 2, we look at the previous 2 words to determine the next and so on.</p>
+<p>There is also a struct parameter that we can pass a list or a set. The importance of this choice will be explained later</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[&nbsp;]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython2"><pre><span class="k">def</span> <span class="nf">generate_adjacency_map</span><span class="p">(</span><span class="n">corpus</span><span class="p">,</span> <span class="n">order</span><span class="p">,</span> <span class="n">struct</span><span class="o">=</span><span class="nb">list</span><span class="p">):</span>
+    <span class="n">adjacency_map</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="n">struct</span><span class="p">)</span>    
+    <span class="k">for</span> <span class="n">sentence</span> <span class="ow">in</span> <span class="n">corpus</span><span class="o">.</span><span class="n">sents</span><span class="p">():</span>        
+        <span class="c"># generate a list where the start and end are buffered by start and end tags.</span>
+        <span class="n">words</span> <span class="o">=</span> <span class="p">([</span><span class="n">start_tag</span><span class="p">]</span> <span class="o">*</span> <span class="n">order</span><span class="p">)</span> <span class="o">+</span> <span class="n">sentence</span> <span class="o">+</span> <span class="p">([</span><span class="n">end_tag</span><span class="p">]</span> <span class="o">*</span> <span class="n">order</span><span class="p">)</span>
+        
+        <span class="c">#slide over the list</span>
+        <span class="c">#add each new word to the adjacency_map indexed by the preceding order-words</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">sentence</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+            <span class="n">preceding_words</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">([</span><span class="n">words</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">i</span> <span class="o">+</span> <span class="n">order</span><span class="p">)])</span>
+            <span class="n">word</span> <span class="o">=</span> <span class="n">words</span><span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="n">order</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">struct</span> <span class="ow">is</span> <span class="nb">list</span><span class="p">:</span>
+                <span class="n">adjacency_map</span><span class="p">[</span><span class="n">preceding_words</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">word</span><span class="p">)</span>   
+            <span class="k">elif</span> <span class="n">struct</span> <span class="ow">is</span> <span class="nb">set</span><span class="p">:</span>
+                <span class="n">adjacency_map</span><span class="p">[</span><span class="n">preceding_words</span><span class="p">]</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">word</span><span class="p">)</span>  
+                
+    <span class="k">return</span> <span class="n">adjacency_map</span>         
 </pre></div>
 
 </div>
@@ -260,78 +297,11 @@ div#notebook {
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[2]:</div>
+<div class="prompt input_prompt">In&nbsp;[&nbsp;]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython2"><pre><span class="c">#load and randomise data</span>
-<span class="n">dataset</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="s">&#39;dota_dataset.csv&#39;</span><span class="p">,</span> <span class="n">index_col</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span>
-<span class="n">dataset</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">take</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">permutation</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">dataset</span><span class="p">)))</span>
-
-<span class="c">#split dependent/independent variables</span>
-<span class="n">x</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="s">&#39;radiant_win&#39;</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
-<span class="n">y</span> <span class="o">=</span> <span class="n">dataset</span><span class="p">[</span><span class="s">&#39;radiant_win&#39;</span><span class="p">]</span>
-
-<span class="c">#print results</span>
-<span class="k">print</span> <span class="s">&#39;Logistic Regression accuracy:&#39;</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">cross_val_score</span><span class="p">(</span><span class="n">LogisticRegression</span><span class="p">(),</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">scoring</span><span class="o">=</span><span class="s">&#39;accuracy&#39;</span><span class="p">,</span> <span class="n">cv</span> <span class="o">=</span> <span class="mi">2</span><span class="p">))</span>
-<span class="k">print</span> <span class="s">&#39;MultinominalNB accuracy:&#39;</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">cross_val_score</span><span class="p">(</span><span class="n">MultinomialNB</span><span class="p">(),</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">scoring</span><span class="o">=</span><span class="s">&#39;accuracy&#39;</span><span class="p">,</span> <span class="n">cv</span> <span class="o">=</span> <span class="mi">2</span><span class="p">))</span>
-</pre></div>
-
-</div>
-</div>
-</div>
-
-<div class="output_wrapper">
-<div class="output">
-
-
-<div class="output_area"><div class="prompt"></div>
-<div class="output_subarea output_stream output_stdout output_text">
-<pre>Logistic Regression accuracy: 0.720026078346
-MultinominalNB accuracy: 0.715616213512
-</pre>
-</div>
-</div>
-
-</div>
-</div>
-
-</div>
-<div class="cell border-box-sizing text_cell rendered">
-<div class="prompt input_prompt">
-</div>
-<div class="inner_cell">
-<div class="text_cell_render border-box-sizing rendered_html">
-<p>Something funnys going on in the paper, they report 69.8% accuracy using logistic regression but I have been unable to replicate it unless I restrict the dataset to the first ~20000 entries. This might suggest some error in the first ~20000 entries of the dataset. I compared logistic regression to my usual first choice for binary datasets, the multinomial Naive Bayes classifier. MultinomialNB seems to do much better over the whole dataset, and roughly in the ball park of the authors original model, so no harm done I guess.</p>
-
-</div>
-</div>
-</div>
-<div class="cell border-box-sizing text_cell rendered">
-<div class="prompt input_prompt">
-</div>
-<div class="inner_cell">
-<div class="text_cell_render border-box-sizing rendered_html">
-<p>When developing our neural net model, it will be useful to use MultinomialNB as a baseline.</p>
-
-</div>
-</div>
-</div>
-<div class="cell border-box-sizing text_cell rendered">
-<div class="prompt input_prompt">
-</div>
-<div class="inner_cell">
-<div class="text_cell_render border-box-sizing rendered_html">
-<h2 id="Tensorflow-Model">Tensorflow Model<a class="anchor-link" href="#Tensorflow-Model">&#182;</a></h2>
-</div>
-</div>
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[3]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython2"><pre><span class="kn">import</span> <span class="nn">tensorflow</span> <span class="kn">as</span> <span class="nn">tf</span>
-<span class="kn">from</span> <span class="nn">sklearn.cross_validation</span> <span class="kn">import</span> <span class="n">train_test_split</span>
+<div class=" highlight hl-ipython2"><pre><span class="n">word_adjacency_list</span> <span class="o">=</span> <span class="n">generate_adjacency_map</span><span class="p">(</span><span class="n">corpus</span> <span class="o">=</span> <span class="n">inaugural</span><span class="p">,</span> <span class="n">order</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span> <span class="n">struct</span><span class="o">=</span><span class="nb">list</span><span class="p">)</span>
+<span class="n">word_adjacency_set</span> <span class="o">=</span> <span class="n">generate_adjacency_map</span><span class="p">(</span><span class="n">corpus</span> <span class="o">=</span> <span class="n">inaugural</span><span class="p">,</span> <span class="n">order</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span> <span class="n">struct</span><span class="o">=</span><span class="nb">set</span><span class="p">)</span>
 </pre></div>
 
 </div>
@@ -344,56 +314,18 @@ MultinominalNB accuracy: 0.715616213512
 </div>
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<p>First split our dataset into training, validation and test sets</p>
+<p>Of course both structures contain the same number of unique elements, but in a set all unique words have equal probability to be picked at random. In a list, the more frequest the word, the more times it is expected to be picked at random.</p>
 
 </div>
 </div>
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[4]:</div>
+<div class="prompt input_prompt">In&nbsp;[&nbsp;]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython2"><pre><span class="n">dataset</span><span class="p">,</span> <span class="n">validation</span> <span class="o">=</span> <span class="n">train_test_split</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="n">test_size</span> <span class="o">=</span> <span class="mf">0.1</span><span class="p">)</span>
-<span class="n">train</span><span class="p">,</span> <span class="n">test</span> <span class="o">=</span> <span class="n">train_test_split</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="n">test_size</span> <span class="o">=</span> <span class="mf">0.1</span><span class="p">)</span>
-<span class="k">print</span> <span class="s">&#39;train:&#39;</span><span class="p">,</span> <span class="n">train</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="s">&#39;validation:&#39;</span><span class="p">,</span> <span class="n">validation</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="s">&#39;test:&#39;</span><span class="p">,</span> <span class="n">test</span><span class="o">.</span><span class="n">shape</span>
-</pre></div>
-
-</div>
-</div>
-</div>
-
-<div class="output_wrapper">
-<div class="output">
-
-
-<div class="output_area"><div class="prompt"></div>
-<div class="output_subarea output_stream output_stdout output_text">
-<pre>train: (45918, 217) validation: (5670, 217) test: (5103, 217)
-</pre>
-</div>
-</div>
-
-</div>
-</div>
-
-</div>
-<div class="cell border-box-sizing text_cell rendered">
-<div class="prompt input_prompt">
-</div>
-<div class="inner_cell">
-<div class="text_cell_render border-box-sizing rendered_html">
-<p>Initialise the TensorFlow session. InteractiveSession works much better for iPython Notebooks</p>
-
-</div>
-</div>
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[5]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython2"><pre><span class="n">sess</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">InteractiveSession</span><span class="p">()</span>
+<div class=" highlight hl-ipython2"><pre><span class="k">print</span> <span class="s">&#39;set : mean word adjacencies -&#39;</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="nb">len</span><span class="p">,</span> <span class="n">word_adjacency_set</span><span class="o">.</span><span class="n">values</span><span class="p">()))</span>
+<span class="k">print</span> <span class="s">&#39;list: mean word adjacencies -&#39;</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="nb">len</span><span class="p">,</span> <span class="n">word_adjacency_list</span><span class="o">.</span><span class="n">values</span><span class="p">()))</span>
 </pre></div>
 
 </div>
@@ -406,272 +338,25 @@ MultinominalNB accuracy: 0.715616213512
 </div>
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<p>Now the placeholders. This are essentially all the information that you might want to pass into your graph. The reason for splitting up the x variable will be explained just a little later.</p>
+<p>The following function takes the adjacency structure and builds a random sentence out of it.</p>
 
 </div>
 </div>
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[6]:</div>
+<div class="prompt input_prompt">In&nbsp;[&nbsp;]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython2"><pre><span class="c">#input/output placeholders</span>
-<span class="n">x_dire</span>    <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">placeholder</span><span class="p">(</span><span class="s">&quot;float&quot;</span><span class="p">,</span> <span class="n">shape</span><span class="o">=</span><span class="p">[</span><span class="bp">None</span><span class="p">,</span> <span class="mi">108</span><span class="p">],</span> <span class="n">name</span><span class="o">=</span><span class="s">&#39;x_dire&#39;</span><span class="p">)</span>
-<span class="n">x_radiant</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">placeholder</span><span class="p">(</span><span class="s">&quot;float&quot;</span><span class="p">,</span> <span class="n">shape</span><span class="o">=</span><span class="p">[</span><span class="bp">None</span><span class="p">,</span> <span class="mi">108</span><span class="p">],</span> <span class="n">name</span><span class="o">=</span><span class="s">&#39;x_radiant&#39;</span><span class="p">)</span>
-<span class="n">y_</span>        <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">placeholder</span><span class="p">(</span><span class="s">&quot;float&quot;</span><span class="p">,</span> <span class="n">shape</span><span class="o">=</span><span class="p">[</span><span class="bp">None</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span> <span class="n">name</span><span class="o">=</span><span class="s">&#39;y_true&#39;</span><span class="p">)</span>
-
-<span class="c">#we&#39;ll use dropout layers for regularisation which need a keep probability</span>
-<span class="n">keep_prob1</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">placeholder</span><span class="p">(</span><span class="s">&quot;float&quot;</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s">&#39;keep_prob1&#39;</span><span class="p">)</span>
-<span class="n">keep_prob2</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">placeholder</span><span class="p">(</span><span class="s">&quot;float&quot;</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s">&#39;keep_prob2&#39;</span><span class="p">)</span>
-
-<span class="c">#there doesn&#39;t seem to be any other way to differenciate train and validation summaries for TensorBoard</span>
-<span class="n">loss_name</span>     <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">placeholder</span><span class="p">(</span><span class="s">&quot;string&quot;</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s">&#39;loss_name&#39;</span><span class="p">)</span>
-<span class="n">accuracy_name</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">placeholder</span><span class="p">(</span><span class="s">&quot;string&quot;</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s">&#39;accuracy_name&#39;</span><span class="p">)</span>
-</pre></div>
-
-</div>
-</div>
-</div>
-
-</div>
-<div class="cell border-box-sizing text_cell rendered">
-<div class="prompt input_prompt">
-</div>
-<div class="inner_cell">
-<div class="text_cell_render border-box-sizing rendered_html">
-<p>The following function creates a fully connected layer with the matching weights/biases</p>
-
-</div>
-</div>
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[8]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython2"><pre><span class="k">def</span> <span class="nf">fc_weight_bias</span><span class="p">(</span><span class="n">in_size</span><span class="p">,</span> <span class="n">out_size</span><span class="p">):</span>
-    <span class="n">initial_weight</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">truncated_normal</span><span class="p">([</span><span class="n">in_size</span><span class="p">,</span> <span class="n">out_size</span><span class="p">],</span> <span class="n">stddev</span><span class="o">=</span><span class="mf">0.2</span><span class="p">,</span> <span class="n">mean</span><span class="o">=</span><span class="mf">0.0</span><span class="p">)</span>
-    <span class="n">initial_bias</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">constant</span><span class="p">(</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">shape</span><span class="o">=</span><span class="p">[</span><span class="n">out_size</span><span class="p">])</span>
-    <span class="k">return</span> <span class="n">tf</span><span class="o">.</span><span class="n">Variable</span><span class="p">(</span><span class="n">initial_weight</span><span class="p">),</span> <span class="n">tf</span><span class="o">.</span><span class="n">Variable</span><span class="p">(</span><span class="n">initial_bias</span><span class="p">)</span>
-</pre></div>
-
-</div>
-</div>
-</div>
-
-</div>
-<div class="cell border-box-sizing text_cell rendered">
-<div class="prompt input_prompt">
-</div>
-<div class="inner_cell">
-<div class="text_cell_render border-box-sizing rendered_html">
-<p>Now I'll explain the network architecture.</p>
-<p>Since there are two teams in Dota and we intuitively want to network to first learn about the composition of each team, then pit them against each other, it makes sense to split the network in two at the bottom. One neural net to learn about the Radiant team, and another to learn about the Dire team, and combine them later to predict the winner.</p>
-<p>But a good team on the Radiant side is still be a good team on the Dire side. It makes sense that if our neural net model learns that a certain combination of characters on one side is a good it should transfer that knowledge to the other side. How do we do this? We make both sides use the same weights! This solves both problems. It allows the neural net to concentrate on learning what makes anyone one side effective at the lower layers and leaves how to combine that information to the higher levels. Its a nice hierarchical structure, which is exactly what neural nets are good at.</p>
-<p>We're going to project the output to 2 columns, which i'll explain below.</p>
-
-</div>
-</div>
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[9]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython2"><pre><span class="c">#first hero layer</span>
-<span class="k">with</span> <span class="n">tf</span><span class="o">.</span><span class="n">name_scope</span><span class="p">(</span><span class="s">&quot;hero_layers_1&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">scope</span><span class="p">:</span>
-    <span class="n">W_hero1</span><span class="p">,</span> <span class="n">b_hero1</span> <span class="o">=</span> <span class="n">fc_weight_bias</span><span class="p">(</span><span class="mi">108</span><span class="p">,</span><span class="mi">80</span><span class="p">)</span>      
-    <span class="c">#note that dire layer and radiant layer use the same weights and biases</span>
-    <span class="n">dire_layer1</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">relu</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">matmul</span><span class="p">(</span><span class="n">x_dire</span><span class="p">,</span> <span class="n">W_hero1</span><span class="p">)</span> <span class="o">+</span> <span class="n">b_hero1</span><span class="p">)</span>
-    <span class="n">radiant_layer1</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">relu</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">matmul</span><span class="p">(</span><span class="n">x_radiant</span><span class="p">,</span> <span class="n">W_hero1</span><span class="p">)</span> <span class="o">+</span> <span class="n">b_hero1</span><span class="p">)</span>
-
-<span class="c">#second hero layer</span>
-<span class="k">with</span> <span class="n">tf</span><span class="o">.</span><span class="n">name_scope</span><span class="p">(</span><span class="s">&quot;hero_layers_2&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">scope</span><span class="p">:</span>    
-    <span class="n">W_hero2</span><span class="p">,</span> <span class="n">b_hero2</span> <span class="o">=</span> <span class="n">fc_weight_bias</span><span class="p">(</span><span class="mi">80</span><span class="p">,</span><span class="mi">80</span><span class="p">)</span>    
-    <span class="c">#again, dire and radiant use the same weights and biases</span>
-    <span class="n">dire_layer2</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">relu</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">matmul</span><span class="p">(</span><span class="n">dire_layer1</span><span class="p">,</span> <span class="n">W_hero2</span><span class="p">)</span> <span class="o">+</span> <span class="n">b_hero2</span><span class="p">)</span>
-    <span class="n">radiant_layer2</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">relu</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">matmul</span><span class="p">(</span><span class="n">radiant_layer1</span><span class="p">,</span> <span class="n">W_hero2</span><span class="p">)</span> <span class="o">+</span> <span class="n">b_hero2</span><span class="p">)</span>
-
-<span class="c">#now concatenate the dire and radiant team outputs</span>
-<span class="k">with</span> <span class="n">tf</span><span class="o">.</span><span class="n">name_scope</span><span class="p">(</span><span class="s">&quot;hero_layers_concat&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">scope</span><span class="p">:</span>
-    <span class="n">dire_radiant_concat</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">concat</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="p">[</span><span class="n">dire_layer2</span><span class="p">,</span> <span class="n">radiant_layer2</span><span class="p">])</span>
-    <span class="n">dire_radiant_drop</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">dropout</span><span class="p">(</span><span class="n">dire_radiant_concat</span><span class="p">,</span> <span class="n">keep_prob1</span><span class="p">)</span>
-    <span class="n">h_drop1</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">dropout</span><span class="p">(</span><span class="n">dire_radiant_drop</span><span class="p">,</span> <span class="n">keep_prob1</span><span class="p">)</span>
-    
-<span class="k">with</span> <span class="n">tf</span><span class="o">.</span><span class="n">name_scope</span><span class="p">(</span><span class="s">&quot;hidden_layer_1&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">scope</span><span class="p">:</span>
-    <span class="n">W_hidden1</span><span class="p">,</span> <span class="n">b_hidden1</span> <span class="o">=</span> <span class="n">fc_weight_bias</span><span class="p">(</span><span class="mi">160</span><span class="p">,</span><span class="mi">120</span><span class="p">)</span>    
-    <span class="n">h_hidden1</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">relu</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">matmul</span><span class="p">(</span><span class="n">h_drop1</span><span class="p">,</span> <span class="n">W_hidden1</span><span class="p">)</span> <span class="o">+</span> <span class="n">b_hidden1</span><span class="p">)</span>
-    <span class="n">h_drop2</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">dropout</span><span class="p">(</span><span class="n">h_hidden1</span><span class="p">,</span> <span class="n">keep_prob2</span><span class="p">)</span>
-
-<span class="k">with</span> <span class="n">tf</span><span class="o">.</span><span class="n">name_scope</span><span class="p">(</span><span class="s">&quot;hidden_layer_2&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">scope</span><span class="p">:</span>
-    <span class="n">W_hidden2</span><span class="p">,</span> <span class="n">b_hidden2</span> <span class="o">=</span> <span class="n">fc_weight_bias</span><span class="p">(</span><span class="mi">120</span><span class="p">,</span><span class="mi">75</span><span class="p">)</span>    
-    <span class="n">h_hidden2</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">relu</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">matmul</span><span class="p">(</span><span class="n">h_drop2</span><span class="p">,</span> <span class="n">W_hidden2</span><span class="p">)</span> <span class="o">+</span> <span class="n">b_hidden2</span><span class="p">)</span>
-
-<span class="k">with</span> <span class="n">tf</span><span class="o">.</span><span class="n">name_scope</span><span class="p">(</span><span class="s">&quot;hidden_layer_3&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">scope</span><span class="p">:</span>
-    <span class="n">W_hidden3</span><span class="p">,</span> <span class="n">b_hidden3</span> <span class="o">=</span> <span class="n">fc_weight_bias</span><span class="p">(</span><span class="mi">75</span><span class="p">,</span><span class="mi">25</span><span class="p">)</span>    
-    <span class="n">h_hidden3</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">relu</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">matmul</span><span class="p">(</span><span class="n">h_hidden2</span><span class="p">,</span> <span class="n">W_hidden3</span><span class="p">)</span> <span class="o">+</span> <span class="n">b_hidden3</span><span class="p">)</span>
-
-
-<span class="k">with</span> <span class="n">tf</span><span class="o">.</span><span class="n">name_scope</span><span class="p">(</span><span class="s">&quot;output_layer&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">scope</span><span class="p">:</span>
-    <span class="n">W_hidden4</span><span class="p">,</span> <span class="n">b_hidden4</span> <span class="o">=</span> <span class="n">fc_weight_bias</span><span class="p">(</span><span class="mi">25</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span>    
-    <span class="n">y</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">softmax</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">matmul</span><span class="p">(</span><span class="n">h_hidden3</span><span class="p">,</span> <span class="n">W_hidden4</span><span class="p">)</span> <span class="o">+</span> <span class="n">b_hidden4</span><span class="p">)</span>
-</pre></div>
-
-</div>
-</div>
-</div>
-
-</div>
-<div class="cell border-box-sizing text_cell rendered">
-<div class="prompt input_prompt">
-</div>
-<div class="inner_cell">
-<div class="text_cell_render border-box-sizing rendered_html">
-<p>And since we're using TensorFlow, we get a graph representation of our net for free!</p>
-
-</div>
-</div>
-</div>
-<div class="cell border-box-sizing text_cell rendered">
-<div class="prompt input_prompt">
-</div>
-<div class="inner_cell">
-<div class="text_cell_render border-box-sizing rendered_html">
-<p><img src="/public/dota_model/graph1.PNG"></p>
-
-</div>
-</div>
-</div>
-<div class="cell border-box-sizing text_cell rendered">
-<div class="prompt input_prompt">
-</div>
-<div class="inner_cell">
-<div class="text_cell_render border-box-sizing rendered_html">
-<p>Now after propagating through the network, we need to analyse our result. As mentioned, our result will be project to two columns instead of just one. We'll one-hot encode the winning team so that one column represents a win for the Radiant and the other a win for the Dire. I got better preformance from the network doing softmax + cross-entropy on the two columns rather than sigmoid + binary cross-entropy on one column. I believe this might be because the network gets two points of information this way rather than one.</p>
-
-</div>
-</div>
-</div>
-<div class="cell border-box-sizing text_cell rendered">
-<div class="prompt input_prompt">
-</div>
-<div class="inner_cell">
-<div class="text_cell_render border-box-sizing rendered_html">
-<p>To improve generalisation, I regularise the network by adding the sum of the l2 norms of all the weights and biases to the loss value. I found this helped a lot. Mean loss is used as a reporting metric to compare training and validation loss.</p>
-<p>For training, I used the Adam Optimizer. The best introductory resource I've found for choosing the right optimizer is by Sebastian Ruder <a href="http://sebastianruder.com/optimizing-gradient-descent/">here</a>. As he suggests, using an optimizer that implements adaptive learning rates for each parameter is usually advisable given sparse data. Since some heros are picked much less frequently than others, the Adam optimizer is a good choice here.</p>
-<p>Finally, for accuracy prediction, we pair off the prediction with the ground truth values to and check if they're equal.</p>
-
-</div>
-</div>
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[10]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython2"><pre><span class="k">with</span> <span class="n">tf</span><span class="o">.</span><span class="n">name_scope</span><span class="p">(</span><span class="s">&quot;loss_calculations&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">scope</span><span class="p">:</span>
-    <span class="n">cross_entropy</span> <span class="o">=</span> <span class="o">-</span><span class="n">tf</span><span class="o">.</span><span class="n">reduce_sum</span><span class="p">(</span><span class="n">y_</span> <span class="o">*</span> <span class="n">tf</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">y</span> <span class="o">+</span> <span class="mf">1e-8</span><span class="p">))</span>
-    <span class="n">weights_sum</span>   <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">add_n</span><span class="p">([</span><span class="n">tf</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">l2_loss</span><span class="p">(</span><span class="n">variable</span><span class="p">)</span> <span class="k">for</span> <span class="n">variable</span> <span class="ow">in</span> <span class="n">tf</span><span class="o">.</span><span class="n">all_variables</span><span class="p">()])</span>
-    <span class="n">loss</span>          <span class="o">=</span> <span class="n">cross_entropy</span> <span class="o">+</span> <span class="n">weights_sum</span>
-    <span class="n">mean_loss</span>     <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">reduce_mean</span><span class="p">(</span><span class="n">loss</span><span class="p">)</span>
-
-<span class="k">with</span> <span class="n">tf</span><span class="o">.</span><span class="n">name_scope</span><span class="p">(</span><span class="s">&quot;trainer&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">scope</span><span class="p">:</span>
-    <span class="n">train_step</span>    <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">train</span><span class="o">.</span><span class="n">AdamOptimizer</span><span class="p">(</span><span class="mf">0.0001</span><span class="p">)</span><span class="o">.</span><span class="n">minimize</span><span class="p">(</span><span class="n">loss</span><span class="p">)</span>
-
-<span class="k">with</span> <span class="n">tf</span><span class="o">.</span><span class="n">name_scope</span><span class="p">(</span><span class="s">&quot;accuracy_calculations&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">scope</span><span class="p">:</span>
-    <span class="n">correct</span>  <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">equal</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="n">tf</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">y_</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
-    <span class="n">accuracy</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">reduce_mean</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">cast</span><span class="p">(</span><span class="n">correct</span><span class="p">,</span> <span class="s">&quot;float&quot;</span><span class="p">))</span>
-</pre></div>
-
-</div>
-</div>
-</div>
-
-</div>
-<div class="cell border-box-sizing text_cell rendered">
-<div class="prompt input_prompt">
-</div>
-<div class="inner_cell">
-<div class="text_cell_render border-box-sizing rendered_html">
-<p>Tensorflow allows us to generate some nice visualisations in Tensorboard using summary objects</p>
-
-</div>
-</div>
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[11]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython2"><pre><span class="c">#summarize the accuracy and loss </span>
-<span class="n">accuracy_summary</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">scalar_summary</span><span class="p">(</span><span class="n">accuracy_name</span><span class="p">,</span> <span class="n">accuracy</span><span class="p">)</span>
-<span class="n">mean_loss_summary</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">scalar_summary</span><span class="p">(</span><span class="n">loss_name</span><span class="p">,</span> <span class="n">mean_loss</span><span class="p">)</span>
-
-<span class="c">#summarize the distribution of output values</span>
-<span class="n">y_hist</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">histogram_summary</span><span class="p">(</span><span class="s">&quot;y&quot;</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
-
-<span class="c">#gather all summaries</span>
-<span class="n">merged</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">merge_all_summaries</span><span class="p">()</span>
-
-<span class="n">writer</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">train</span><span class="o">.</span><span class="n">SummaryWriter</span><span class="p">(</span><span class="s">&quot;logdir&quot;</span><span class="p">,</span> <span class="n">sess</span><span class="o">.</span><span class="n">graph_def</span><span class="p">)</span>
-</pre></div>
-
-</div>
-</div>
-</div>
-
-</div>
-<div class="cell border-box-sizing text_cell rendered">
-<div class="prompt input_prompt">
-</div>
-<div class="inner_cell">
-<div class="text_cell_render border-box-sizing rendered_html">
-<p>Now that we're just finished setting up our model, initialize all the variables we created</p>
-
-</div>
-</div>
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[12]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython2"><pre><span class="n">sess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">initialize_all_variables</span><span class="p">())</span>
-</pre></div>
-
-</div>
-</div>
-</div>
-
-</div>
-<div class="cell border-box-sizing text_cell rendered">
-<div class="prompt input_prompt">
-</div>
-<div class="inner_cell">
-<div class="text_cell_render border-box-sizing rendered_html">
-<p>We'll create a helper function to help create the various data feeds we need</p>
-
-</div>
-</div>
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[13]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython2"><pre><span class="k">def</span> <span class="nf">get_data_feed</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="n">kp1</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">kp2</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">loss_str</span><span class="o">=</span><span class="s">&#39;loss&#39;</span><span class="p">,</span> <span class="n">accuracy_str</span><span class="o">=</span><span class="s">&#39;accuracy&#39;</span><span class="p">):</span>
-    <span class="n">radiant_data</span><span class="p">,</span> <span class="n">dire_data</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">ix</span><span class="p">[:,:</span><span class="mi">108</span><span class="p">],</span> <span class="n">dataset</span><span class="o">.</span><span class="n">ix</span><span class="p">[:,</span><span class="mi">108</span><span class="p">:</span><span class="mi">216</span><span class="p">]</span>
-    <span class="n">winners</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">get_dummies</span><span class="p">(</span><span class="n">dataset</span><span class="p">[</span><span class="s">&#39;radiant_win&#39;</span><span class="p">])</span>
-    <span class="k">return</span> <span class="p">{</span>
-        <span class="n">x_radiant</span><span class="p">:</span> <span class="n">radiant_data</span><span class="p">,</span>
-        <span class="n">x_dire</span><span class="p">:</span> <span class="n">dire_data</span><span class="p">,</span>
-        <span class="n">y_</span><span class="p">:</span> <span class="n">winners</span><span class="p">,</span>
-        <span class="n">loss_name</span><span class="p">:</span> <span class="n">loss_str</span><span class="p">,</span>
-        <span class="n">accuracy_name</span><span class="p">:</span> <span class="n">accuracy_str</span><span class="p">,</span>
-        <span class="n">keep_prob1</span><span class="p">:</span> <span class="n">kp1</span><span class="p">,</span>
-        <span class="n">keep_prob2</span><span class="p">:</span> <span class="n">kp2</span>
-    <span class="p">}</span>  
+<div class=" highlight hl-ipython2"><pre><span class="k">def</span> <span class="nf">build_sentence</span><span class="p">(</span><span class="n">adjacency_map</span><span class="p">,</span> <span class="n">order</span><span class="p">,</span> <span class="n">max_len</span><span class="o">=</span><span class="mi">50</span><span class="p">):</span>
+    <span class="n">sentence</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">next_word</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>    
+    <span class="n">state</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">([</span><span class="n">start_tag</span><span class="p">]</span> <span class="o">*</span> <span class="n">order</span><span class="p">)</span>    
+    <span class="k">while</span> <span class="n">next_word</span> <span class="o">!=</span> <span class="n">end_tag</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">sentence</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">max_len</span><span class="p">:</span>
+        <span class="n">sentence</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">next_word</span><span class="p">)</span>
+        <span class="n">next_word</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">choice</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">adjacency_map</span><span class="p">[</span><span class="n">state</span><span class="p">]))</span>
+        <span class="n">state</span> <span class="o">=</span> <span class="n">state</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span> <span class="o">+</span> <span class="p">(</span><span class="n">next_word</span><span class="p">,)</span>
+    <span class="k">return</span> <span class="s">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">sentence</span><span class="p">)</span>    
 </pre></div>
 
 </div>
@@ -681,12 +366,11 @@ MultinominalNB accuracy: 0.715616213512
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[14]:</div>
+<div class="prompt input_prompt">In&nbsp;[&nbsp;]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython2"><pre><span class="n">train_feed</span>      <span class="o">=</span> <span class="n">get_data_feed</span><span class="p">(</span><span class="n">train</span><span class="p">,</span>      <span class="n">loss_str</span> <span class="o">=</span> <span class="s">&#39;loss_train&#39;</span><span class="p">,</span>      <span class="n">accuracy_str</span> <span class="o">=</span> <span class="s">&#39;accuracy_train&#39;</span><span class="p">)</span>
-<span class="n">validation_feed</span> <span class="o">=</span> <span class="n">get_data_feed</span><span class="p">(</span><span class="n">validation</span><span class="p">,</span> <span class="n">loss_str</span> <span class="o">=</span> <span class="s">&#39;loss_validation&#39;</span><span class="p">,</span> <span class="n">accuracy_str</span> <span class="o">=</span> <span class="s">&#39;accuracy_validation&#39;</span><span class="p">)</span>
-<span class="n">test_feed</span>       <span class="o">=</span> <span class="n">get_data_feed</span><span class="p">(</span><span class="n">test</span><span class="p">,</span>       <span class="n">loss_str</span> <span class="o">=</span> <span class="s">&#39;loss_test&#39;</span><span class="p">,</span>       <span class="n">accuracy_str</span> <span class="o">=</span> <span class="s">&#39;accuracy_test&#39;</span><span class="p">)</span>
+<div class=" highlight hl-ipython2"><pre><span class="n">sentence</span> <span class="o">=</span> <span class="n">build_sentence</span><span class="p">(</span><span class="n">word_adjacency_list</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+<span class="n">sentence</span>
 </pre></div>
 
 </div>
@@ -699,24 +383,53 @@ MultinominalNB accuracy: 0.715616213512
 </div>
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<p>And a helper function to generate the mini-batches for our dataset</p>
+<h2 id="Part-Two---Word-tags-as-states">Part Two - Word tags as states<a class="anchor-link" href="#Part-Two---Word-tags-as-states">&#182;</a></h2>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>At this point, I had an idea. I could use the <a href="https://textblob.readthedocs.org/en/dev/">TextBlob library</a> to tag the words and use that as the markov state instead.</p>
+<p>For each part of speech tag, I saved the assosiated bag of words, and built an adjacency structure similarly to what I did for words</p>
 
 </div>
 </div>
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[15]:</div>
+<div class="prompt input_prompt">In&nbsp;[&nbsp;]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython2"><pre><span class="k">def</span> <span class="nf">get_batches</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="mi">512</span><span class="p">):</span>
-    <span class="c">#randomise before every epoch</span>
-    <span class="n">dataset</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">take</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">permutation</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">dataset</span><span class="p">)))</span>
-    
-    <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span>
-    <span class="k">while</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">dataset</span><span class="p">):</span>
-        <span class="k">yield</span> <span class="n">dataset</span><span class="p">[</span><span class="n">i</span> <span class="p">:</span> <span class="n">i</span> <span class="o">+</span> <span class="n">batch_size</span><span class="p">]</span>
-        <span class="n">i</span> <span class="o">=</span> <span class="n">i</span> <span class="o">+</span> <span class="n">batch_size</span>           
+<div class=" highlight hl-ipython2"><pre><span class="k">def</span> <span class="nf">generate_tag_adjacencies</span><span class="p">(</span><span class="n">corpus</span><span class="p">,</span> <span class="n">order</span><span class="p">,</span> <span class="n">struct</span><span class="o">=</span><span class="nb">list</span><span class="p">):</span>
+        
+    <span class="n">adjacency_map</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="n">struct</span><span class="p">)</span>
+    <span class="n">tag_word_bags</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="n">struct</span><span class="p">,</span> <span class="p">{</span><span class="n">end_tag</span> <span class="p">:</span> <span class="p">[</span><span class="s">&#39;.&#39;</span><span class="p">]})</span>
+
+    <span class="k">for</span> <span class="n">sentence</span> <span class="ow">in</span> <span class="n">corpus</span><span class="o">.</span><span class="n">sents</span><span class="p">():</span> 
+        <span class="n">tagged_sent</span> <span class="o">=</span> <span class="n">TextBlob</span><span class="p">(</span><span class="s">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">sentence</span><span class="p">))</span><span class="o">.</span><span class="n">tags</span>    
+        
+        <span class="c">#add tagged words to the relevent tag bag</span>
+        <span class="k">for</span> <span class="n">word</span><span class="p">,</span> <span class="n">tag</span> <span class="ow">in</span> <span class="n">tagged_sent</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">struct</span> <span class="ow">is</span> <span class="nb">list</span><span class="p">:</span>                
+                <span class="n">tag_word_bags</span><span class="p">[</span><span class="n">tag</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">word</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">struct</span> <span class="ow">is</span> <span class="nb">set</span><span class="p">:</span>
+                <span class="n">tag_word_bags</span><span class="p">[</span><span class="n">tag</span><span class="p">]</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">word</span><span class="p">)</span>
+
+        <span class="c">#build tag adjacency map similarly to the word-based one</span>
+        <span class="n">tags</span> <span class="o">=</span> <span class="p">([</span><span class="n">start_tag</span><span class="p">]</span> <span class="o">*</span> <span class="n">order</span><span class="p">)</span> <span class="o">+</span> <span class="nb">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">tup</span><span class="p">:</span> <span class="n">tup</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">tagged_sent</span><span class="p">)</span> <span class="o">+</span> <span class="p">([</span><span class="n">end_tag</span><span class="p">]</span> <span class="o">*</span> <span class="n">order</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">tagged_sent</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+            <span class="n">index</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">([</span><span class="n">tags</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">i</span> <span class="o">+</span> <span class="n">order</span><span class="p">)])</span>
+            <span class="n">tag</span> <span class="o">=</span> <span class="n">tags</span><span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="n">order</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">struct</span> <span class="ow">is</span> <span class="nb">list</span><span class="p">:</span>                
+                <span class="n">adjacency_map</span><span class="p">[</span><span class="n">index</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tag</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">struct</span> <span class="ow">is</span> <span class="nb">set</span><span class="p">:</span>
+                <span class="n">adjacency_map</span><span class="p">[</span><span class="n">index</span><span class="p">]</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">tag</span><span class="p">)</span>
+            
+    <span class="k">return</span> <span class="n">adjacency_map</span><span class="p">,</span> <span class="n">tag_word_bags</span>
 </pre></div>
 
 </div>
@@ -726,119 +439,38 @@ MultinominalNB accuracy: 0.715616213512
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[16]:</div>
+<div class="prompt input_prompt">In&nbsp;[&nbsp;]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython2"><pre><span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">100</span><span class="p">):</span>    
-    <span class="k">for</span> <span class="n">mini_batch</span> <span class="ow">in</span> <span class="n">get_batches</span><span class="p">(</span><span class="n">train</span><span class="p">):</span>
-        <span class="n">mini_batch_feed</span> <span class="o">=</span> <span class="n">get_data_feed</span><span class="p">(</span><span class="n">mini_batch</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">)</span>   
-        <span class="n">train_step</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">feed_dict</span> <span class="o">=</span> <span class="n">mini_batch_feed</span><span class="p">)</span>
-    
-    <span class="c">#log every epoch</span>
-    <span class="n">train_loss</span>          <span class="o">=</span> <span class="n">loss</span><span class="o">.</span><span class="n">eval</span><span class="p">(</span><span class="n">feed_dict</span> <span class="o">=</span> <span class="n">train_feed</span><span class="p">)</span>
-    <span class="n">validation_loss</span>     <span class="o">=</span> <span class="n">loss</span><span class="o">.</span><span class="n">eval</span><span class="p">(</span><span class="n">feed_dict</span> <span class="o">=</span> <span class="n">validation_feed</span><span class="p">)</span>
-
-    <span class="n">train_accuracy</span>      <span class="o">=</span> <span class="n">accuracy</span><span class="o">.</span><span class="n">eval</span><span class="p">(</span><span class="n">feed_dict</span> <span class="o">=</span> <span class="n">train_feed</span><span class="p">)</span>
-    <span class="n">validation_accuracy</span> <span class="o">=</span> <span class="n">accuracy</span><span class="o">.</span><span class="n">eval</span><span class="p">(</span><span class="n">feed_dict</span> <span class="o">=</span> <span class="n">validation_feed</span><span class="p">)</span>
-
-    <span class="n">train_summary_str</span>      <span class="o">=</span> <span class="n">merged</span><span class="o">.</span><span class="n">eval</span><span class="p">(</span><span class="n">feed_dict</span> <span class="o">=</span> <span class="n">train_feed</span><span class="p">)</span>
-    <span class="n">validation_summary_str</span> <span class="o">=</span> <span class="n">merged</span><span class="o">.</span><span class="n">eval</span><span class="p">(</span><span class="n">feed_dict</span> <span class="o">=</span> <span class="n">validation_feed</span><span class="p">)</span>                
-
-    <span class="n">writer</span><span class="o">.</span><span class="n">add_summary</span><span class="p">(</span><span class="n">train_summary_str</span><span class="p">,</span> <span class="n">i</span><span class="p">)</span>
-    <span class="n">writer</span><span class="o">.</span><span class="n">add_summary</span><span class="p">(</span><span class="n">validation_summary_str</span><span class="p">,</span> <span class="n">i</span><span class="p">)</span>
-    <span class="k">print</span><span class="p">(</span><span class="s">&quot;epoch </span><span class="si">%d</span><span class="s">, loss: </span><span class="si">%g</span><span class="s">, train: </span><span class="si">%g</span><span class="s">, validation: </span><span class="si">%g</span><span class="s">&quot;</span><span class="o">%</span> <span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">train_loss</span><span class="p">,</span> <span class="n">train_accuracy</span><span class="p">,</span> <span class="n">validation_accuracy</span><span class="p">))</span> 
-
-<span class="n">writer</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+<div class=" highlight hl-ipython2"><pre><span class="n">tag_adjacency_list</span><span class="p">,</span> <span class="n">tag_bags_list</span> <span class="o">=</span> <span class="n">generate_tag_adjacencies</span><span class="p">(</span><span class="n">corpus</span> <span class="o">=</span> <span class="n">inaugural</span><span class="p">,</span> <span class="n">order</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span> <span class="n">struct</span><span class="o">=</span><span class="nb">list</span><span class="p">)</span>
+<span class="n">tag_adjacency_set</span><span class="p">,</span> <span class="n">tag_bags_set</span> <span class="o">=</span> <span class="n">generate_tag_adjacencies</span><span class="p">(</span><span class="n">corpus</span> <span class="o">=</span> <span class="n">inaugural</span><span class="p">,</span> <span class="n">order</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span> <span class="n">struct</span><span class="o">=</span><span class="nb">set</span><span class="p">)</span>
 </pre></div>
 
 </div>
 </div>
 </div>
 
-<div class="output_wrapper">
-<div class="output">
-
-
-<div class="output_area"><div class="prompt"></div>
-<div class="output_subarea output_stream output_stdout output_text">
-<pre>
-epoch 0, loss: 32321.9, train: 0.573196, validation: 0.575309
-epoch 1, loss: 31795.6, train: 0.583867, validation: 0.58642
-epoch 2, loss: 31684.5, train: 0.591794, validation: 0.589065
-epoch 3, loss: 31644.3, train: 0.594756, validation: 0.594709
-epoch 4, loss: 31583.8, train: 0.60301, validation: 0.60388
-epoch 5, loss: 31571.8, train: 0.605667, validation: 0.611287
-
-...
-
-epoch 94, loss: 24909.1, train: 0.72697, validation: 0.713228
-epoch 95, loss: 24917.3, train: 0.726469, validation: 0.711111
-epoch 96, loss: 24897, train: 0.727144, validation: 0.711993
-epoch 97, loss: 24894.2, train: 0.727318, validation: 0.710406
-epoch 98, loss: 24885.2, train: 0.727427, validation: 0.711817
-epoch 99, loss: 24892.5, train: 0.727427, validation: 0.710935
-</pre>
-</div>
-</div>
-
-</div>
-</div>
-
 </div>
 <div class="cell border-box-sizing text_cell rendered">
 <div class="prompt input_prompt">
 </div>
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<p>After 100 or so epochs, it looks like the network has more or less converged. We also get some more pretty graphs for free from TensorBoard. Although its kinda annoying how there isn't currently anyway to put the training and validation loss plots on the same graph.</p>
-
-</div>
-</div>
-</div>
-<div class="cell border-box-sizing text_cell rendered">
-<div class="prompt input_prompt">
-</div>
-<div class="inner_cell">
-<div class="text_cell_render border-box-sizing rendered_html">
-<img src="/public/dota_model/loss_accuracy.png" style="width: 100%;"/> 
-</div>
-</div>
-</div>
-<div class="cell border-box-sizing text_cell rendered">
-<div class="prompt input_prompt">
-</div>
-<div class="inner_cell">
-<div class="text_cell_render border-box-sizing rendered_html">
-<p>Finally, only after we've convinced ourselves that our model is pretty much finalised, do we get to peek at the test score.</p>
+<p>In this case, the list/set difference makes a significant difference.</p>
 
 </div>
 </div>
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[17]:</div>
+<div class="prompt input_prompt">In&nbsp;[&nbsp;]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython2"><pre><span class="n">accuracy</span><span class="o">.</span><span class="n">eval</span><span class="p">(</span><span class="n">feed_dict</span><span class="o">=</span><span class="n">test_feed</span><span class="p">)</span>
+<div class=" highlight hl-ipython2"><pre><span class="k">print</span> <span class="s">&#39;list: mean tag adjacencies -&#39;</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="nb">len</span><span class="p">,</span> <span class="n">tag_adjacency_list</span><span class="o">.</span><span class="n">values</span><span class="p">())),</span> <span class="s">&#39;, mean word bag size -&#39;</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="nb">len</span><span class="p">,</span> <span class="n">tag_bags_list</span><span class="o">.</span><span class="n">values</span><span class="p">()))</span>
+<span class="k">print</span> <span class="s">&#39;set : mean tag adjacencies -&#39;</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="nb">len</span><span class="p">,</span> <span class="n">tag_adjacency_set</span><span class="o">.</span><span class="n">values</span><span class="p">())),</span> <span class="s">&#39;, mean word bag size -&#39;</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="nb">len</span><span class="p">,</span> <span class="n">tag_bags_set</span><span class="o">.</span><span class="n">values</span><span class="p">()))</span>
 </pre></div>
 
 </div>
-</div>
-</div>
-
-<div class="output_wrapper">
-<div class="output">
-
-
-<div class="output_area"><div class="prompt output_prompt">Out[17]:</div>
-
-
-<div class="output_text output_subarea output_execute_result">
-<pre>0.72212422</pre>
-</div>
-
-</div>
-
 </div>
 </div>
 
@@ -848,13 +480,133 @@ epoch 99, loss: 24892.5, train: 0.727427, validation: 0.710935
 </div>
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<p>Neat, 72.21% test accuracy! Earlier, the MultinominalNB model got to about 71.5% accuracy. Before drawing the conclusion that our model is definitely better though, I think there are two things worth noting.</p>
-<p>The first is that there is a good chance we got kinda lucky with our test data and that it was relatively easy to predict. Its quite unusual to get a higher test score than validation score. This could be rectified by doing some proper cross validation, i.e repeatedly choosing different training, validation and test sets and seeing how the model preforms. But this is a bit of a chore when you have to worry about long training times.</p>
-<p>The second thing worth noting is the vast difference between the complexity of building each model. It is far from insignificant that the MultinominalNB model could be built and cross validated in one line of code. Its clear which one would be easier to maintain and debug. The added complexity of the neural net also brings the relative unexplainability of each decision. The naive bayes model can be analysed using some bayesian statistics, but analysing neural nets and understanding why they arrive at the answers they do is still an active area of research.</p>
-<p>Because of the points above, after all this, I think its fair to declare the one-line MultinominalNB model the winner. Either way, I learned a lot while writing this up which was always my primary goal.</p>
+<p>This means that if we choose to use a set as the datastructure, our resulting sentences will feel much more random.</p>
 
-<p><a href="/public/ipython_notebooks/tensorflow_dota_model.ipynb">Download IPython Notebook</a></p>
-<p><a href="/public/dota_model/dota_dataset.csv">Download Dataset</a></p>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>Next we build a sentence using the above structures similarly to before. But now the word we want to add to the sentence and what state we are entering are separate concepts.</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[&nbsp;]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython2"><pre><span class="k">def</span> <span class="nf">build_tag_sentence</span><span class="p">(</span><span class="n">adjacency_map</span><span class="p">,</span> <span class="n">tag_word_bags</span><span class="p">,</span> <span class="n">order</span><span class="p">,</span> <span class="n">max_len</span><span class="o">=</span><span class="mi">50</span><span class="p">):</span>
+    <span class="n">sentence</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">next_tag</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="n">state</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">([</span><span class="n">start_tag</span><span class="p">]</span> <span class="o">*</span> <span class="n">order</span><span class="p">)</span>
+    <span class="k">while</span> <span class="n">next_tag</span> <span class="o">!=</span> <span class="n">end_tag</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">sentence</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">max_len</span><span class="p">:</span>
+        <span class="n">next_tag</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">choice</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">adjacency_map</span><span class="p">[</span><span class="n">state</span><span class="p">]))</span>
+        <span class="n">next_word</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">choice</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">tag_word_bags</span><span class="p">[</span><span class="n">next_tag</span><span class="p">]))</span>
+        <span class="n">state</span> <span class="o">=</span> <span class="n">state</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span> <span class="o">+</span> <span class="p">(</span><span class="n">next_tag</span><span class="p">,)</span>
+        <span class="n">sentence</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">next_word</span><span class="p">)</span>        
+    <span class="k">return</span> <span class="s">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">sentence</span><span class="p">)</span>    
+</pre></div>
+
+</div>
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[&nbsp;]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython2"><pre><span class="n">sentence</span> <span class="o">=</span> <span class="n">build_tag_sentence</span><span class="p">(</span><span class="n">tag_adjacency_list</span><span class="p">,</span> <span class="n">tag_bags_list</span><span class="p">,</span> <span class="n">order</span> <span class="o">=</span> <span class="mi">2</span><span class="p">)</span>
+<span class="n">sentence</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h2 id="Results">Results<a class="anchor-link" href="#Results">&#182;</a></h2>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>Finally, we put together a bunch of sentences to make our Inaugural Address.</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[&nbsp;]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython2"><pre><span class="k">def</span> <span class="nf">output</span><span class="p">(</span><span class="n">sents</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">HTML</span><span class="p">(</span><span class="s">&#39;&lt;p&gt;&#39;</span> <span class="o">+</span> <span class="p">(</span><span class="s">&#39;&lt;/p&gt;&lt;p&gt;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">sents</span><span class="p">))</span> <span class="o">+</span> <span class="s">&#39;&lt;/p&gt;&#39;</span><span class="p">)</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[&nbsp;]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython2"><pre><span class="n">output</span><span class="p">([</span><span class="n">build_sentence</span><span class="p">(</span><span class="n">word_adjacency_list</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">10</span><span class="p">)])</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[&nbsp;]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython2"><pre><span class="n">output</span><span class="p">([</span><span class="n">build_tag_sentence</span><span class="p">(</span><span class="n">tag_adjacency_list</span><span class="p">,</span> <span class="n">tag_bags_list</span><span class="p">,</span> <span class="n">order</span> <span class="o">=</span> <span class="mi">2</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">10</span><span class="p">)])</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h2 id="Conclusions">Conclusions<a class="anchor-link" href="#Conclusions">&#182;</a></h2>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>As you might have expected, its just a nonsense generator. Increasing the order can reduce the nonsense-rating, but on a corpus as small as this, it ends up regurgitating entire sentences.</p>
+<p>The tag method seems to be even worse than the word-based method, but maybe you could combine them somehow to improve the result.</p>
+<p><a href="/public/ipython_notebooks/markov_inauguration_generator.ipynb">Download IPython Notebook</a></p>
 
 </div>
 </div>
