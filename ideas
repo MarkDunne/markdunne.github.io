@@ -30,15 +30,10 @@ API given email address returns info on that person
 Use echonest api to blend songs
 	Like infinite jukebox but for more than 1 song
 	http://labs.echonest.com/Uploader/faq.html
-	
-use dota matchups to predict winner	
-	can get 500 matches from http://www.dotabuff.com/matches
 
 does resampling (with replacement) training data between epochs improve generalisation
 
 age a face using neural nets
 	use same method as google deep dreams
 	
-speach generation using recurrent neural net
-
-simple word embedding
+hill climbing algorithms do actual hill climbing
