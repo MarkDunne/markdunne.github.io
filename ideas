@@ -41,3 +41,6 @@ hill climbing algorithms do actual hill climbing
 neural net to generate video frames
 
 determine most likely location of reddit user based on time of posts
+
+train a NN to send signals via sound
+	basically need to trainan autoencoder that transmits sound in the middle
