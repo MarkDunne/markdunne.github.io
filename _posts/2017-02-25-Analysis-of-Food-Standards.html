@@ -1,0 +1,90 @@
+---
+Analysis of Food Standards in the UK and London
+---
+
+<h1>Analysis of Food Standards in the UK and London</h1>
+
+<h2>Background</h2>
+
+<p>
+While lying in bed the day following eating a dodgy curry in London, I had the idea of analysing food standards across the capital. Little did I know just how many rabbit holes this would lead me down, even right down to disagreements on the shape of the Earth from two government agencies!	
+</p>
+
+<h2>Acquiring the data</h2>
+
+<p>
+Thankfully, the British government publishes all food hygene ratings <a href="http://ratings.food.gov.uk/">online</a> The only way to access the data appears to be from the website, so I wrote a scraper. The scraper ran over a couple of hours on a cheap Google Cloud instance and collected data on a total of 515,748 locations covering all of the following categories
+
+<ul>
+	<li>Mobile caterer</li>
+	<li>Farmers / Growers</li>
+	<li>Importers / Exporters</li>
+	<li>Pub / Bar / Nightclub</li>
+	<li>Retailers - other</li>
+	<li>Restaurant / Cafe / Canteen</li>
+	<li>Manufacturers / packers</li>
+	<li>Takeaway / Sandwich Shop</li>
+	<li>Distributors / Transporters</li>
+	<li>Other catering premises</li>
+	<li>School / College / University</li>
+	<li>Hospitals / Childcare / Caring Premises</li>
+	<li>Hotel / Bed & breakfast / Guest house</li>
+	<li>Supermarkets / Hypermarkets</li>
+</ul>
+
+From each location, I tried to collect the name of the business, the longitude/latitude, the postcode, the rating, and various other fields.
+</p>
+
+<p>
+As you might expect of data scraped from a government website, the data was incredibly dirty. Amongst the problems was someone in Northumberland clearly not doing their job properly. Over 95% of the 2900 locations missing rating information were from Northumberland. A further 60,000 locations had missing longitude/latitude coordinates. These were excluded from the dataset.
+</p>
+
+<p>
+The most difficult part of cleaning up the data was dealing with the names. These locations were obviously entered manually, and independently by multiple people. There is enourmous inconsistency between naming of chains. For example, there are more than 100 different ways that McDonald's has been input. Some of the more common inputs are as follows, I can only assume all of these refer to the well known chain.
+
+<ul>
+	<li>McDonalds</li>
+	<li>McDonalds Restaurants Ltd</li>
+	<li>McDonalds Restaurant</li>
+	<li>McDonald's</li>
+	<li>Mcdonalds</li>
+	<li>Mcdonalds Restaurants Ltd</li>
+	<li>McDonald's Restaurants Ltd</li>
+	<li>McDonalds Restaurants</li>
+	<li>McDonald's Restaurant</li>
+	<li>McDonalds Restaurants Limited</li>
+	<li>McDonalds Restaurant Ltd</li>
+	<li>McDonald's Restaurants</li>
+	<li>MCDONALDS</li>
+	<li>McDonald's Restaurants Ltd.</li>
+	<li>McDonald's Restaurants Limited</li>
+	<li>Mcdonalds Restaurant</li>
+	<li>MCDONALDS RESTAURANTS LTD</li>
+	<li>MCDONALDS RESTAURANT</li>
+	<li>McDonald's Restaurant Ltd</li>
+	<li>MCDONALD'S</li>
+	<li>Mc Donald's</li>
+	<li>Mc Donalds</li>
+	<li>Mc Donalds Restaurant</li>
+</ul> 
+
+However even McDonald's was a fairly benign example when compared to The Co-op. After spending hours trying to clean up the dataset on Google's <a href="http://openrefine.org/">OpenRefine</a>, I was still finding new names that referred to The Co-op and their subsidiaries.
+</p>
+
+<h2>Interesting Finds</h2>
+
+<p>After processing and cleaning up the data, I was left with 431,758 locations with a numeric rating (not all ratings are on that 1 to 5 scale). The good news is that the vast majority of establishments had a rating of 5.</p>
+
+<img src="/public/food_standards/num_locations_by_rating.svg">
+
+<p>Most of the big chains, had great ratings. I was surprised to see that McDonald's, Burger King, and Subway all had perfect ratings.</p>
+
+<img src="/public/food_standards/average_chain_rating.svg">
+
+<p>The notable exception of the big fast food chains was KFC, falling quite a bit below the national average. In fact, KFC was among the lowest of even its cheaper compeditors.</p>
+
+<img src="/public/food_standards/average_chicken_rating.svg">
+
+<h2>Food rating by London postcode</h2>
+
+<img src="/public/food_standards/london_postcode_map.svg">
