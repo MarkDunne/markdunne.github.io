@@ -1,5 +1,5 @@
 ---
-Analysis of Food Standards in the UK and London
+title: Analysis of Food Standards in the UK and London
 ---
 
 <h1>Analysis of Food Standards in the UK and London</h1>
@@ -87,4 +87,13 @@ However even McDonald's was a fairly benign example when compared to The Co-op. 
 
 <h2>Food rating by London postcode</h2>
 
+<p>Now we get to the interesting bit, a map of food standards across London. </p>
+
+<p>I decided to average food standards by postcode, so the first step was to get a map of London's postcodes. I found a shapefile of all UK postcodes from here <a href="http://www.opendoorlogistics.com/data/">here</a>. This shapefile used the same <a href="https://en.wikipedia.org/wiki/Spatial_reference_system">coordinate reference system</a> (CRS) as the collected data so everything lined up nicely. After merging some postcodes (e.g SW1X, and SW1Y into SW1), and loading the data into geopandas, I was able to calculate the average food rating by postcode. </p>
+
+<p> However, it turns out that some postcodes span the river Thames. This makes for a very ugly map when plotted. The solution is to merge this map with another, geographically accurate map. That shapefile comes courtesy of the British Government <a href="https://data.london.gov.uk/dataset/statistical-gis-boundary-files-london">here</a>. Unfortunately, this shapefile uses a different CRS than the rest of our data. Shapefiles provided by the the GIS arm of the British government seems to use the British National Grid (BNG) coordinate system. The BNG system and the standard GPS coordinate system <a href="https://en.wikipedia.org/wiki/World_Geodetic_System">(WGS84)</a> assume different shapes for the earth so don't work together. Thankfully, its quite easy to change one CRS into another using geopandas. Once I had converted the geographically accurate map to one compatible to the postcode map, I could subtract one from the other and end up with a map of postcodes that followed the river Thames.</p>
+
+<p>The end result is what follows.</p>
+
 <img src="/public/food_standards/london_postcode_map.svg">
+
