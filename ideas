@@ -38,9 +38,16 @@ age a face using neural nets
 	
 hill climbing algorithms do actual hill climbing
 
-neural net to generate video frames
-
-determine most likely location of reddit user based on time of posts
+determine most likely location of reddit user based on time of posts.
+	Could get ground truth by analysing city subreddits in known time zones.
 
 train a NN to send signals via sound
 	basically need to trainan autoencoder that transmits sound in the middle
+	
+Find hidden airports
+	Track planes like the one in HAI video (https://www.youtube.com/watch?v=pWNGAUvSyOc) 
+	from historic data https://uk.flightaware.com/live/flight/N859WP.
+	Planes about to land should be slowing down to dropping in altitude.
+	How should disappear at regular locations
+	
+	Maybe using proportion of disappearing planes in area could be interesting
