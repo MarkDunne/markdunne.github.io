@@ -51,3 +51,7 @@ Find hidden airports
 	How should disappear at regular locations
 	
 	Maybe using proportion of disappearing planes in area could be interesting
+	
+Colony of neural networks
+	Can a colony of neural networks evolve together?
+	Simulate an ant colony, success being solving group challenges like https://www.quantamagazine.org/the-simple-algorithm-that-ants-use-to-build-bridges-20180226/
