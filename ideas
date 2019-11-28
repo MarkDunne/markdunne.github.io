@@ -61,3 +61,9 @@ Does readability score of companies shareholder letters change over time?
 	https://en.wikipedia.org/wiki/Flesch%E2%80%93Kincaid_readability_tests
 	https://www.youtube.com/watch?v=4ab2ZeZ-krY
 	More confusing = something to hide
+
+Play with cloud functions
+	Show that they're actually stateful. Implement a counter and show that it increments between invocations
+	Can you build a whole domain with routing?
+
+Office meal ordering system
