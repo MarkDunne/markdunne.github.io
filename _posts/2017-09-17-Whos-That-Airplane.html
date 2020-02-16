@@ -1,0 +1,154 @@
+{% raw %}
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Who's That Airplane?</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/css/bootstrap.min.css" integrity="sha384-rwoIResjU2yc3z8GV/NPeZWAv56rSmLldC3R/AZzGRnGxQQKnKkoFVhFQhNUwEyJ" crossorigin="anonymous">
+    <script src="https://unpkg.com/vue/dist/vue.min.js"></script>
+    <style type="text/css">
+        img{
+            max-width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <div id="app" class="container mb-5 mt-5">
+        <div id="questions" v-if='(question != null) && !game_over'>
+            <div class="container-fluid">
+                <h1>Question {{question_index + 1}} / {{max_questions}}</h1>
+                <img v-bind:src='question.img_link'>
+                <div class="mt-2">
+                    <h2>Who is the manufacturer? (20 points)</h2>
+                    <div class="row">
+                        <div class="col-4 mt-2" v-for='_, manufacturer in airplanes'>
+                            <button 
+                                class="btn btn-primary btn-block"
+                                v-on:click='check_manufacturer(manufacturer, $event)'
+                                :disabled='question_over || manufacturer_correct'>
+                                {{manufacturer}}
+                            </button>
+                        </div>
+                    </div>
+                    <div class="alert alert-success mt-2" role="alert" v-if='manufacturer_correct'>Correct! {{manufacturer_points}} points!</div>
+                    <div class="alert alert-danger mt-2" role="alert" v-if='!manufacturer_correct && question_over'>
+                        Incorrect! The correct answer was {{question.aircraft_manufacturer}}
+                    </div>
+                </div>
+                <div class="mt-2" v-if='manufacturer_correct'>
+                    <h2>What is the model? (100 points)</h2>
+                    <div class="row">
+                        <div class="col-4 mt-2" v-for='model in airplanes[question.aircraft_manufacturer]'>
+                            <button 
+                                class="btn btn-primary btn-block"
+                                v-on:click='check_model(model, $event)'
+                                :disabled='question_over || model_correct'>
+                                {{model}}
+                            </button>
+                        </div>
+                    </div>
+                    <div class="alert alert-success mt-2" role="alert" v-if='model_correct'>Correct! {{model_points}} points!</div>
+                    <div class="alert alert-danger mt-2" role="alert" v-if='!model_correct && question_over'>
+                        Incorrect! The correct answer was {{question.aircraft_family}}
+                    </div>
+                </div>
+                <div class="mt-2" v-if='question_over'>         
+                    <div class="row">
+                        <div class="col-md-6 mx-auto">
+                            <button class="btn btn-success btn-lg btn-block" v-on:click='next_question'>Next</button>                  
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div v-else-if='game_over'>
+            <div class="card">
+                <div class="card-block">
+                    <h1 class="card-title">Quiz Complete!</h1>
+                    <p>You scored {{score}}/{{max_points}} points, or {{(100 * score / max_points).toFixed(2)}}%</p>
+                </div>
+            </div>
+        </div>
+        <div v-else>
+            Loading airplane data...
+        </div>
+    </div>
+    
+    <script type="text/javascript"> 
+        var choice_without_repeats = function(arr, n){
+            if(n > arr.length){
+                return arr
+            }
+
+            result = []
+            for (var i = 0; i < n; i++) {
+                choice = Math.floor(Math.random() * arr.length)
+                result.push(arr[choice])
+                arr.splice(choice, 1)
+            }
+            return result
+        }
+
+        var app = new Vue({
+            el: '#app',
+            data: {
+                some_text: 'hello',
+                score: 0,
+                manufacturer_points: 20,
+                model_points: 100,
+                airplanes: {},
+                questions: [],
+                max_questions: 10,
+                question: null,
+                question_index: 0,
+                manufacturer_correct: false,
+                model_correct: false,
+                question_over: false,
+                game_over: false,
+            },
+            methods: {
+                next_question(){
+                    this.question_index += 1
+                    if (this.question_index >= this.max_questions) {
+                        this.game_over = true;
+                    } else {
+                        this.manufacturer_correct = false
+                        this.model_correct = false
+                        this.question_over = false                       
+                        this.question = this.questions[this.question_index]
+                    }
+                },
+                check_manufacturer: function(selected_manufacturer, event){
+                    if(selected_manufacturer == this.question.aircraft_manufacturer){
+                        this.manufacturer_correct = true
+                        this.score += this.manufacturer_points
+                    } else {
+                        this.question_over = true
+                    }
+                },
+                check_model: function(selected_model, event){
+                    if(selected_model == this.question.aircraft_family){                    
+                        this.model_correct = true
+                        this.score += this.model_points
+                    }
+                    this.question_over = true
+                },
+            },
+            mounted: function(){                
+                fetch("/public/whos_that_airplane/question_data.json")
+                    .then(response => response.json())
+                    .then(question_data => {
+                        this.questions = choice_without_repeats(question_data.questions, this.max_questions)
+                        this.airplanes = question_data.airplanes
+                        this.question = this.questions[0]
+                    })
+                this.max_points = this.max_questions * (this.manufacturer_points + this.model_points)
+            },
+        })
+    </script>
+</body>
+</html>
+
+{% endraw %}
