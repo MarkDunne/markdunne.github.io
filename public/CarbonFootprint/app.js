@@ -130,9 +130,6 @@ var app = new Vue({
 
                         let path_year_month_regex = /Semantic Location History\/\d+\/(\d\d\d\d)_([A-Z]+).json/gm;
                         var matches = path_year_month_regex.exec(relativePath)
-                        if (matches == null) {
-                            console.log('null', relativePath)
-                        }
 
                         var year = matches[1]
                         var month = matches[2]
