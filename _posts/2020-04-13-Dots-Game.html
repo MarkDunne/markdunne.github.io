@@ -1,0 +1,118 @@
+{% raw %}
+
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Dotty Game</title>
+    <meta charset="utf-8" />
+    <style type="text/css">
+      #gameCanvas {
+        margin: 0 auto;
+        display: block;
+      }
+
+      #chooseLevel li {
+        padding: 5px;
+      }
+
+      #chooseLevel li:nth-child(even) {
+        background-color: aliceblue;
+      }
+
+      .popup {
+        position: absolute;
+        width: 400px;
+        top: 300px;
+        left: 50%;
+        text-align: center;
+        background-color: white;
+        transform: translate(-50%, -50%);
+
+        border-radius: 10px;
+        border: 10px solid rgb(12, 12, 12);
+        box-shadow: 0px 10px 5px rgba(0, 0, 0, 0.644);
+      }
+
+      .popup .popup_buttons {
+        padding: 25px;
+      }
+
+      .popup button {
+        padding: 5px;
+      }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+  </head>
+
+  <body>
+    <div id="app">
+      <div id="chooseLevel" v-if="gameState==GameState.ChooseLevel">
+        <ul>
+          <li v-for="(level, index) in levels">
+            <span
+              >Level {{ index + 1 }}. Difficulty: {{ level['difficulty']
+              }}</span
+            >
+            <button v-on:click="start_level(index)">Play</button>
+          </li>
+        </ul>
+      </div>
+
+      <canvas
+        id="gameCanvas"
+        ref="gameCanvas"
+        width="1200"
+        height="800"
+        v-if="[GameState.Playing, GameState.GameWon, GameState.GameOver].includes(gameState)"
+      ></canvas>
+      <div
+        v-if="gameState==GameState.GameOver"
+        v-cloak
+        id="gameOver"
+        class="popup"
+      >
+        <h1>Game Over</h1>
+        <div class="popup_buttons">
+          <button v-on:click="start_level(currentLevelIndex)">
+            Play again
+          </button>
+          <button v-on:click="gameState=GameState.ChooseLevel">
+            Return to puzzle list
+          </button>
+        </div>
+      </div>
+      <div
+        v-if="gameState==GameState.GameWon"
+        v-cloak
+        id="gameWon"
+        class="popup"
+      >
+        <h1>You won!</h1>
+        <p>
+          You reached the goal in {{ this.game.moves_made.length }} moves. The
+          minimum is {{ this.currentLevel['solution_length'] }}
+        </p>
+
+        <div class="popup_buttons">
+          <button v-on:click="start_level(currentLevelIndex)">
+            Play again
+          </button>
+          <button v-on:click="gameState=GameState.ChooseLevel">
+            Return to puzzle list
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <script
+      type="text/javascript"
+      src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.1.0/anime.min.js"
+    ></script>
+    <script type="text/javascript" src="/public/dotsgame/modules/puzzle_data.js"></script>
+    <script type="text/javascript" src="/public/dotsgame/modules/pieces.js"></script>
+    <script type="text/javascript" src="/public/dotsgame/modules/game.js"></script>
+    <script type="text/javascript" src="/public/dotsgame/app.js"></script>
+  </body>
+</html>
+
+{% endraw %}
