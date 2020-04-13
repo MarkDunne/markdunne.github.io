@@ -38,9 +38,7 @@ class Game {
 
         if (!this.is_valid()) {
             this.listener.onInvalidMove(this)
-        }
-
-        if (this.is_winning()) {
+        } else if (this.is_winning()) {
             this.listener.onWin(this)
         }
     }
