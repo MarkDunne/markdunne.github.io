@@ -6,7 +6,7 @@ title: Home
 <div id="content">
     <div id="header">
         <h1>Mark Dunne</h1>
-        <p>Data Scientist working in genetic engineering startup</p>
+        <p>Tidbits and Binary Sonnets</p>
     </div>
 
     <hr />
@@ -28,9 +28,15 @@ title: Home
 
     <hr />
 
-    <h2>Experiments</h2>
+    <h2>Stuff I've made</h2>
 
     <ul>
+        <li>
+            <a href="https://cinemap.fly.dev/">2023 - Cinemap - A map of movie showtimes in and around London.</a>
+        </li>
+        <li>
+            <a href="https://optispoons.fly.dev/">2022 - Optispoons - A tool for finding the most central wetherspoons</a>
+        </li>        
         {% for post in site.posts %} {% if post.is_experiment == true %}
         <li>
             <a href="{{ post.url }}">
