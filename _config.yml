@@ -1,18 +1,20 @@
 # Dependencies
-highlighter:      rouge
+markdown: kramdown
+highlighter: rouge
+input: GFM
 
 # Permalinks
-permalink:        pretty
+permalink: pretty
 
 # Setup
-title:            Mark Dunne
-description:      'Data Scientist working in genetic engineering startup'
-url:              http://markdunne.github.io
-baseurl:          /
+title: Mark Dunne
+description: "Data Scientist working in genetic engineering startup"
+url: http://markdunne.github.io
+baseurl: /
 
 author:
-  name:           'Mark Dunne'
-  url:            http://markdunne.github.io
+  name: "Mark Dunne"
+  url: http://markdunne.github.io
 
 # Custom vars
-version:          1.0.0
+version: 1.0.0
