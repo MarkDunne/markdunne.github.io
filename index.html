@@ -12,17 +12,18 @@ title: Home
     <hr />
 
     <ul>
-        <li><a href="mailto:markdunne02@gmail.com">Contact</a></li>
+        <li><a id="contact" href="#">Contact</a></li>
+        <script>
+            (function() {
+                var a = document.getElementById('contact');
+                var u = 'markdunne02'; var d = 'gmail.com';
+                a.href = 'mailto:' + u + '@' + d;
+            })();
+        </script>
         <li>
             <!--             <a href="/public/mark-dunne-stock-market-prediction.pdf">
                 Undergraduate Thesis - On Stock Market Prediction and Machine Learning
             </a> -->
-        </li>
-        <li>
-            <a href="/public/cold_spring_harbor_poster.pdf">
-                Cold Spring Harbor Laboratory Poster - Evaluating Predictors of CRISPR SpCas9 guide
-                RNA performance.
-            </a>
         </li>
     </ul>
 
@@ -32,28 +33,10 @@ title: Home
 
     <ul>
         <li>
-            <a href="https://bgg-filter.streamlit.app/">2024 - A tool to filter board games on Boardgames Geek.</a>
-        </li>
-        <li>
             <a href="https://mytri.pages.dev/">2024 - MyTri - A simple tool for figuring out triathlon race timings.</a>
         </li>
 
-        <li>
-            <a href="https://cinemap.fly.dev/">2023 - Cinemap - A map of movie showtimes in and around London.</a>
-        </li>
-        <li>
-            <a href="https://liver-meeting-abstracts.streamlit.app/"> 2023 - Liver Meeting Abstracts - A tool for
-                exploring the abstracts of the Liver Meeting 2023 (Favour for a friend)</a>
-        </li>
-        <li>
-            <a href="https://optispoons.fly.dev/">2022 - Optispoons - A tool for finding the most central
-                wetherspoons</a>
-        </li>
-        <li>
-            <a href="https://suguru-solver.fly.dev/">2022 - https://suguru-solver.fly.dev/ - A tool for solving Suguru puzzles</a>
-        </li>
-        
-        {% for post in site.posts %} {% if post.is_experiment == true %}
+        {% for post in site.posts %} {% if post.is_experiment == true and post.slug != "Whos-That-Airplane" %}
         <li>
             <a href="{{ post.url }}">
                 {{ post.date | date_to_string }} - {{ post.title }}
@@ -70,7 +53,19 @@ title: Home
             <a href="{{ post.url }}">
                 {{ post.date | date_to_string }} - {{ post.title }}
             </a>
+            {% if post.slug == "nlp-with-llms" %}<em>(outdated)</em>{% endif %}
         </li>
         {% endif %} {% endfor %}
+    </ul>
+
+    <h2>Archive</h2>
+    <p><em>No longer running</em></p>
+
+    <ul>
+        <li>2024 - A tool to filter board games on BoardGameGeek.</li>
+        <li>2023 - Cinemap - A map of movie showtimes in and around London.</li>
+        <li>2023 - Liver Meeting Abstracts - A tool for exploring the abstracts of the Liver Meeting 2023.</li>
+        <li>2022 - Optispoons - A tool for finding the most central Wetherspoons.</li>
+        <li>2022 - Suguru Solver - A tool for solving Suguru puzzles.</li>
     </ul>
 </div>
