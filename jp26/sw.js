@@ -16,7 +16,7 @@ self.addEventListener('fetch', e => {
   // Network-first for app shell so `just deploy` updates appear immediately when online; fallback to cache offline
   if (url.origin === self.location.origin) {
     e.respondWith(
-      fetch(e.request)
+      fetch(e.request, {cache: 'no-cache'})
         .then(res => {
           const clone = res.clone();
           caches.open(CACHE).then(c => c.put(e.request, clone));
